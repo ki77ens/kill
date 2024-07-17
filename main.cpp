@@ -4,10 +4,12 @@
 #include <string>
 #include <vector>
 
+using namespace std;
+
 bool terminateProc(const std::string& procName) {
     HANDLE hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
     if (hSnap == INVALID_HANDLE_VALUE) {
-        std::cerr << "Couldn't create process snapshot!" << std::endl;
+        cout << "Couldn't create process snapshot!" << endl;
         return false;
     }
 
@@ -21,11 +23,11 @@ bool terminateProc(const std::string& procName) {
                 HANDLE hProc = OpenProcess(PROCESS_TERMINATE, FALSE, pe32.th32ProcessID);
                 if (hProc) {
                     if (TerminateProcess(hProc, 0)) {
-                        std::cout << "Process " << procName << " terminated." << std::endl;
+                        cout << "Process " << procName << " terminated." << endl;
                         terminated = true;
                     }
                     else {
-                        std::cerr << "Could not terminate process: " << procName << std::endl;
+                        cout << "Could not terminate process: " << procName << endl;
                     }
                     CloseHandle(hProc);
                 }
@@ -37,24 +39,24 @@ bool terminateProc(const std::string& procName) {
     CloseHandle(hSnap);
 
     if (!terminated) {
-        std::cerr << "No processes matching name: " << procName << std::endl;
+        cout << "No processes matching name: " << procName << endl;
     }
 
     return terminated;
 }
 
 int main() {
-    std::vector<std::string> procsToTerminate = { "notepad.exe", "chrome.exe", "firefox.exe" };
+    vector<string> procsToTerm = { "notepad.exe", "chrome.exe", "firefox.exe" };
 
-    bool anyTerminated = false;
-    for (const auto& procName : procsToTerminate) {
+    bool anyTermed= false;
+    for (const auto& procName : procsToTerm) {
         if (terminateProc(procName)) {
             anyTerminated = true;
         }
     }
 
-    if (!anyTerminated) {
-        std::cerr << "No processes were terminated." << std::endl;
+    if (!anyTermed) {
+        cout << "No processes were terminated." << endl;
     }
 
     return 0;
