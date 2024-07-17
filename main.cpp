@@ -4,60 +4,57 @@
 #include <string>
 #include <vector>
 
-using namespace std;
-
-bool terminateProcessByName(const string& processName) {
-    HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-    if (snapshot == INVALID_HANDLE_VALUE) {
-        cerr << "failed to create process snapshot." << endl;
+bool terminateProc(const std::string& procName) {
+    HANDLE hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (hSnap == INVALID_HANDLE_VALUE) {
+        std::cerr << "Couldn't create process snapshot!" << std::endl;
         return false;
     }
 
-    PROCESSENTRY32 processEntry;
-    processEntry.dwSize = sizeof(PROCESSENTRY32);
+    PROCESSENTRY32 pe32;
+    pe32.dwSize = sizeof(PROCESSENTRY32);
 
-    bool processTerminated = false;
-    if (Process32First(snapshot, &processEntry)) {
+    bool terminated = false;
+    if (Process32First(hSnap, &pe32)) {
         do {
-            if (_stricmp(processEntry.szExeFile, processName.c_str()) == 0) {
-                HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, processEntry.th32ProcessID);
-                if (hProcess && TerminateProcess(hProcess, 0)) {
-                    cout << "terminated process: " << processName << endl;
-                    processTerminated = true;
+            if (_stricmp(pe32.szExeFile, procName.c_str()) == 0) {
+                HANDLE hProc = OpenProcess(PROCESS_TERMINATE, FALSE, pe32.th32ProcessID);
+                if (hProc) {
+                    if (TerminateProcess(hProc, 0)) {
+                        std::cout << "Process " << procName << " terminated." << std::endl;
+                        terminated = true;
+                    }
+                    else {
+                        std::cerr << "Could not terminate process: " << procName << std::endl;
+                    }
+                    CloseHandle(hProc);
                 }
-                else {
-                    cerr << "failed to terminate process : " << processName << endl;
-                }
-                CloseHandle(hProcess);
                 break;
             }
-        } while (Process32Next(snapshot, &processEntry));
-    }
-    else {
-        cerr << "failed to retrieve first process." << endl;
+        } while (Process32Next(hSnap, &pe32));
     }
 
-    CloseHandle(snapshot);
+    CloseHandle(hSnap);
 
-    if (!processTerminated) {
-        cerr << "no processes matching name: " << processName << endl;
+    if (!terminated) {
+        std::cerr << "No processes matching name: " << procName << std::endl;
     }
 
-    return processTerminated;
+    return terminated;
 }
 
 int main() {
-    vector<string> processesToTerminate = { "notepad.exe", "chrome.exe", "firefox.exe" }; // add whatever you want
+    std::vector<std::string> procsToTerminate = { "notepad.exe", "chrome.exe", "firefox.exe" };
 
-    bool anyProcessTerminated = false;
-    for (const auto& processName : processesToTerminate) {
-        if (terminateProcessByName(processName)) {
-            anyProcessTerminated = true;
+    bool anyTerminated = false;
+    for (const auto& procName : procsToTerminate) {
+        if (terminateProc(procName)) {
+            anyTerminated = true;
         }
     }
 
-    if (!anyProcessTerminated) {
-        cerr << "no processes were successfully terminated." << endl;
+    if (!anyTerminated) {
+        std::cerr << "No processes were terminated." << std::endl;
     }
 
     return 0;
